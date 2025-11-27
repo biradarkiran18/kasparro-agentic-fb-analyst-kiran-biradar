@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-11-27 19:14:29.568339",
+  "query": "test query",
+  "insights": [
+    {
+      "id": "H1",
+      "hypothesis": "ROAS has declined in the last 3 days",
+      "validated": false,
+      "final_confidence": 0.6,
+      "metrics_used": [
+        "ctr",
+        "roas"
+      ],
+      "notes": [
+        "confidence adjusted using extra aggregates"
+      ]
+    },
+    {
+      "id": "H2",
+      "hypothesis": "Creative fatigue in top spend campaigns",
+      "validated": false,
+      "final_confidence": 0.6,
+      "metrics_used": [
+        "ctr",
+        "roas"
+      ],
+      "notes": [
+        "confidence adjusted using extra aggregates"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+python: "3.10"
+random_seed: 42
+confidence_min: 0.6
+use_sample_data: true
+data_csv: "data/sample_fb_ads.csv"
+ctr_low_threshold: 0.01
+roas_drop_threshold: 0.1
