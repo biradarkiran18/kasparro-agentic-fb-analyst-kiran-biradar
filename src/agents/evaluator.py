@@ -1,5 +1,6 @@
 import numpy as np
 
+
 def validate(hypotheses, summary, thresholds):
     out = []
     by_campaign = summary["by_campaign"]
@@ -33,13 +34,15 @@ def validate(hypotheses, summary, thresholds):
             else:
                 validated = False
 
-        out.append({
-            "id": h["id"],
-            "hypothesis": h["hypothesis"],
-            "validated": validated,
-            "final_confidence": conf,
-            "metrics_used": ["ctr", "roas"],
-            "notes": notes
-        })
+        out.append(
+            {
+                "id": h["id"],
+                "hypothesis": h["hypothesis"],
+                "validated": validated,
+                "final_confidence": conf,
+                "metrics_used": ["ctr", "roas"],
+                "notes": notes,
+            }
+        )
 
     return out

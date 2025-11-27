@@ -8,6 +8,6 @@ def plan(query: str):
             "validate_insights",
             "identify_low_ctr",
             "generate_creatives",
-            "produce_report"
-        ]
+            "produce_report",
+        ],
     }
