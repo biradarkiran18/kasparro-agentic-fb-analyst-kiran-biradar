@@ -1,7 +1,6 @@
 
 .PHONY: setup run test clean release
 
-# Replace CONDA_ENV_NAME if you want a different name
 CONDA_ENV := kasparro
 PY := $(shell which python)
 PYTHONPATH := $(shell pwd)
