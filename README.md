@@ -69,7 +69,7 @@ kasparro-agentic-fb-analyst-kiran-biradar/
 
 ## 2. Environment Setup
 
-### **Conda environment (recommended & required for Apple Silicon)**
+### **Conda environment**
 
 ```bash
 conda create -n kasparro python=3.11 -y
@@ -111,7 +111,7 @@ reports/report.md
 
 ---
 
-## 4. Makefile Commands (Optional but Recommended)
+## 4. Makefile Commands
 
 ```makefile
 run:
