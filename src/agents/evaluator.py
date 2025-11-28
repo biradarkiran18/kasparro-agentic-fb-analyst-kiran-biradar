@@ -1,48 +1,110 @@
-import numpy as np
+import math
+from typing import List, Dict, Any, Tuple
+from datetime import datetime
 
 
-def validate(hypotheses, summary, thresholds):
+def _is_number(x) -> bool:
+    try:
+        return not math.isnan(float(x))
+    except Exception:
+        return False
+
+
+def _safe_float(x, default: float = 0.0) -> float:
+    try:
+        return float(x)
+    except Exception:
+        return default
+
+
+def validate(hypotheses, summary, thresholds) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    ctr_thresh = float(thresholds.get("ctr_low_threshold", 0.01))
+    roas_drop_thresh = float(thresholds.get("roas_drop_threshold", 0.2))
+    min_conf = float(thresholds.get("confidence_min", 0.5))
+
     out = []
-    by_campaign = summary["by_campaign"]
+    stats = {"total": 0, "validated": 0, "rules_failed": {}}
 
-    top = sorted(by_campaign, key=lambda x: x["spend"], reverse=True)[:5]
-    mean_ctr = float(np.mean([c["ctr"] for c in top])) if top else 0
+    by_campaign = summary.get("by_campaign") or []
+    campaigns = by_campaign if isinstance(by_campaign, list) else []
 
-    daily = summary["global"]["daily_roas"]
-    roas_last = daily[-1]["roas"] if daily else 0
-    roas_prev = daily[-3]["roas"] if len(daily) >= 3 else roas_last
-    roas_drop = (roas_prev - roas_last) / max(roas_prev, 1e-6)
+    top = sorted(campaigns, key=lambda x: float(x.get("spend", 0)), reverse=True)[:5]
+    mean_ctr = 0.0
+    if top:
+        ctrs = [float(c.get("ctr", 0.0)) for c in top]
+        mean_ctr = sum(ctrs) / len(ctrs)
 
-    for h in hypotheses:
-        validated = None
-        conf = h["initial_confidence"]
-        notes = []
+    daily = summary.get("global", {}).get("daily_roas", []) or []
+    roas_last = _safe_float(daily[-1].get("roas") if daily and isinstance(daily[-1], dict)
+                            else (daily[-1] if daily else 0), 0)
+    roas_prev = roas_last
+    if len(daily) >= 3:
+        prev = daily[-3]
+        roas_prev = _safe_float(prev.get("roas") if isinstance(prev, dict) else prev, roas_last)
 
-        if "Creative fatigue" in h["hypothesis"]:
-            if mean_ctr < thresholds["ctr_low_threshold"]:
-                validated = True
+    roas_drop = 0.0
+    if roas_prev and abs(roas_prev) > 0:
+        roas_drop = (roas_prev - roas_last) / max(abs(roas_prev), 1e-9)
+
+    for h in (hypotheses or []):
+        stats["total"] += 1
+        reasons = []
+        initial_conf = h.get("initial_confidence", h.get("confidence", 0.0))
+        if not _is_number(initial_conf):
+            initial_conf = 0.0
+            reasons.append("confidence_not_numeric")
+        conf = float(initial_conf)
+        validated_flag = False
+        text = (h.get("hypothesis") or "").lower()
+
+        if "creative fatigue" in text or "creative fatigue" in text:
+            if mean_ctr < ctr_thresh:
+                validated_flag = True
                 conf = max(conf, 0.8)
-                notes.append(f"mean_ctr={mean_ctr}")
+                reasons.append(f"mean_ctr_{mean_ctr:.4f}_below_thresh")
             else:
-                validated = False
+                reasons.append(f"mean_ctr_{mean_ctr:.4f}_not_below_thresh")
 
-        if "declined" in h["hypothesis"]:
-            if roas_drop > thresholds["roas_drop_threshold"]:
-                validated = True
+        if any(k in text for k in ("declin", "drop", "roas")):
+            if roas_drop > roas_drop_thresh:
+                validated_flag = True
                 conf = max(conf, 0.75)
-                notes.append(f"roas_drop={roas_drop}")
+                reasons.append(f"roas_drop_{roas_drop:.4f}_above_thresh")
             else:
-                validated = False
+                reasons.append(f"roas_drop_{roas_drop:.4f}_not_above_thresh")
+
+        sample_indicator = summary.get("global", {}).get("total_spend") or summary.get("total_spend")
+        try:
+            if sample_indicator is not None and float(sample_indicator) < 10:
+                conf *= 0.8
+                reasons.append("small_sample_adjustment")
+        except Exception:
+            pass
+
+        conf = max(0.0, min(1.0, float(conf)))
+        validated_flag = validated_flag and (conf >= min_conf)
+
+        for r in reasons:
+            stats["rules_failed"].setdefault(r, 0)
+            stats["rules_failed"][r] += 1
+        if validated_flag:
+            stats["validated"] += 1
 
         out.append(
             {
-                "id": h["id"],
-                "hypothesis": h["hypothesis"],
-                "validated": validated,
-                "final_confidence": conf,
+                "id": h.get("id"),
+                "hypothesis": h.get("hypothesis"),
+                "validated": bool(validated_flag),
+                "final_confidence": float(conf),
                 "metrics_used": ["ctr", "roas"],
-                "notes": notes,
+                "notes": reasons,
             }
         )
 
-    return out
+    metrics = {
+        "num_hypotheses": stats["total"],
+        "num_validated": stats["validated"],
+        "validation_rate": (stats["validated"] / stats["total"]) if stats["total"] else 0.0,
+        "rules_failed_summary": stats["rules_failed"],
+    }
+    return out, metrics

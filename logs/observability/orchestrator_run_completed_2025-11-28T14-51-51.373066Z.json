@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-11-28T14:51:51.373066Z",
+  "agent": "orchestrator",
+  "event": "run_completed",
+  "payload": {
+    "metrics": {
+      "query": "test query",
+      "start_ts": "2025-11-28T14:51:51.363770Z",
+      "run_ts": "2025-11-28T14:51:51.372684Z",
+      "num_hypotheses": 2,
+      "num_validated": 0,
+      "validation_rate": 0.0,
+      "num_creatives": 9
+    }
+  }
+}

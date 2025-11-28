@@ -9,6 +9,7 @@
       "roas"
     ],
     "notes": [
+      "roas_drop_-2.5224_not_above_thresh",
       "confidence adjusted using extra aggregates"
     ]
   },
@@ -22,6 +23,7 @@
       "roas"
     ],
     "notes": [
+      "mean_ctr_0.0154_not_below_thresh",
       "confidence adjusted using extra aggregates"
     ]
   }

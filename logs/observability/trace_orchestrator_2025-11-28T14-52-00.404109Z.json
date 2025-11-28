@@ -1,0 +1,34 @@
+{
+  "timestamp": "2025-11-28T14:52:00.404109Z",
+  "query": "Analyze ROAS drop in last 7 days",
+  "insights": [
+    {
+      "id": "H1",
+      "hypothesis": "ROAS has declined in the last 3 days",
+      "validated": false,
+      "final_confidence": 0.6,
+      "metrics_used": [
+        "ctr",
+        "roas"
+      ],
+      "notes": [
+        "roas_drop_-2.5224_not_above_thresh",
+        "confidence adjusted using extra aggregates"
+      ]
+    },
+    {
+      "id": "H2",
+      "hypothesis": "Creative fatigue in top spend campaigns",
+      "validated": false,
+      "final_confidence": 0.6,
+      "metrics_used": [
+        "ctr",
+        "roas"
+      ],
+      "notes": [
+        "mean_ctr_0.0154_not_below_thresh",
+        "confidence adjusted using extra aggregates"
+      ]
+    }
+  ]
+}

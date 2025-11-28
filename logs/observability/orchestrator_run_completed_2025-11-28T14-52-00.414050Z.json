@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-11-28T14:52:00.414050Z",
+  "agent": "orchestrator",
+  "event": "run_completed",
+  "payload": {
+    "metrics": {
+      "query": "Analyze ROAS drop in last 7 days",
+      "start_ts": "2025-11-28T14:52:00.404109Z",
+      "run_ts": "2025-11-28T14:52:00.413874Z",
+      "num_hypotheses": 2,
+      "num_validated": 0,
+      "validation_rate": 0.0,
+      "num_creatives": 9
+    }
+  }
+}

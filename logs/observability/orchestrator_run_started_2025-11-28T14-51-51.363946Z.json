@@ -1,0 +1,18 @@
+{
+  "timestamp": "2025-11-28T14:51:51.363946Z",
+  "agent": "orchestrator",
+  "event": "run_started",
+  "payload": {
+    "query": "test query",
+    "config": {
+      "data_csv": "data/sample_fb_ads.csv",
+      "ctr_low_threshold": 0.01,
+      "roas_drop_threshold": 0.2,
+      "confidence_min": 0.5,
+      "dynamic_thresholds": true,
+      "rolling_window_days": 30,
+      "metrics_output": "reports/metrics.json",
+      "observability_dir": "logs/observability"
+    }
+  }
+}
