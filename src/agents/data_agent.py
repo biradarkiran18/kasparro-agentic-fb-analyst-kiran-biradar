@@ -1,83 +1,109 @@
-import hashlib
-import json
-import os
-from typing import Dict, Generator, Optional
-
 import pandas as pd
+from typing import Optional
 
 
-SCHEMA_FINGERPRINT_PATH = "reports/schema_fingerprint.json"
-
-
-def _file_fingerprint(path: str) -> str:
-    h = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(8192), b""):
-            h.update(chunk)
-    return h.hexdigest()
-
-
-def _write_json(path: str, obj: Dict):
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w", encoding="utf-8") as f:
-        json.dump(obj, f, indent=2, default=str)
-
-
-def load_data(path: str, sample_mode: bool = False, sample_size: int = 5000, chunksize: Optional[int] = None) -> pd.DataFrame:
+def load_data(
+    path: str,
+    sample_mode: bool = False,
+    sample_size: int = 5000,
+    chunksize: Optional[int] = None,
+) -> pd.DataFrame:
     """
-    Load CSV with safety checks, optional sample mode or streaming via chunksize.
-    Returns a DataFrame. If chunksize provided, reads and concatenates in memory but in chunks.
+    Load CSV data.
+
+    Args:
+        path: CSV path
+        sample_mode: if True, return a deterministic sample of `sample_size`
+        sample_size: number of rows to sample when sample_mode is True
+        chunksize: if provided, read in chunks and concatenate (useful for large files)
+
+    Returns:
+        DataFrame with parsed dates
     """
-    try:
-        if chunksize:
-            frames = []
-            for chunk in pd.read_csv(path, parse_dates=["date"], chunksize=chunksize):
-                frames.append(chunk)
-            df = pd.concat(frames, ignore_index=True) if frames else pd.DataFrame()
+    if chunksize:
+        parts = []
+        for chunk in pd.read_csv(path, parse_dates=["date"], chunksize=chunksize):
+            parts.append(chunk)
+        df = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
+    else:
+        df = pd.read_csv(path, parse_dates=["date"])
+
+    # Basic defensive shape
+    if df is None or df.shape[0] == 0:
+        # return empty well-formed dataframe
+        cols = [
+            "date",
+            "campaign_name",
+            "adset_name",
+            "spend",
+            "impressions",
+            "clicks",
+            "purchases",
+            "revenue",
+            "creative_message",
+        ]
+        return pd.DataFrame(columns=cols)
+
+    if sample_mode:
+        # deterministic sample: use head if dataset smaller than sample_size
+        if df.shape[0] <= sample_size:
+            df = df.copy().reset_index(drop=True)
         else:
-            df = pd.read_csv(path, parse_dates=["date"])
-    except Exception as e:
-        raise RuntimeError(f"failed reading CSV {path}: {e}")
+            df = df.sample(n=sample_size, random_state=42).reset_index(drop=True)
 
-    required = {"date", "campaign_name", "spend", "impressions", "clicks", "revenue"}
-    missing = required - set(df.columns)
-    if missing:
-        raise RuntimeError(f"missing required columns: {missing}")
+    # ensure numeric columns exist
+    for col in ["spend", "impressions", "clicks", "purchases", "revenue"]:
+        if col not in df.columns:
+            df[col] = 0
 
-    # normalize numeric columns
-    for col in ("spend", "impressions", "clicks", "revenue"):
-        df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0.0)
-
-    # sample option
-    if sample_mode and len(df) > sample_size:
-        df = df.sample(n=sample_size, random_state=42).reset_index(drop=True)
-
-    df["roas"] = df["revenue"] / df["spend"].replace(0, 1)
-
-    # schema fingerprinting & drift detection (write current fingerprint)
-    try:
-        fingerprint = {
-            "schema_columns": sorted(list(df.columns)),
-            "row_count": int(len(df)),
-            "file_hash": _file_fingerprint(path),
-        }
-        _write_json(SCHEMA_FINGERPRINT_PATH, fingerprint)
-    except Exception:
-        # do not break pipeline for fingerprint errors
-        pass
-
+    # ensure date dtype
+    if "date" in df.columns:
+        df["date"] = pd.to_datetime(df["date"], errors="coerce")
     return df
 
 
-def summarize(df: pd.DataFrame) -> Dict:
-    df["roas"] = pd.to_numeric(df.get("roas", df["revenue"] / df["spend"].replace(0, 1)), errors="coerce").fillna(0.0)
+def summarize(df: pd.DataFrame):
+    """
+    Produce a summary dict expected by downstream agents/tests.
+    Ensures 'global' and 'by_campaign' keys always exist.
+    """
+    # defensive: empty df
+    if df is None or df.shape[0] == 0:
+        return {
+            "global": {
+                "start_date": None,
+                "end_date": None,
+                "total_spend": 0.0,
+                "total_revenue": 0.0,
+                "daily_roas": [],
+            },
+            "by_campaign": [],
+        }
+
+    # safe arithmetic
+    df["spend"] = pd.to_numeric(df.get("spend", 0), errors="coerce").fillna(0)
+    df["revenue"] = pd.to_numeric(df.get("revenue", 0), errors="coerce").fillna(0)
+    df["impressions"] = pd.to_numeric(df.get("impressions", 0), errors="coerce").fillna(0)
+    df["clicks"] = pd.to_numeric(df.get("clicks", 0), errors="coerce").fillna(0)
+
+    # compute roas per-row where possible
+    df["roas"] = df["revenue"] / df["spend"].replace(0, 1)
+
+    total_spend = float(df["spend"].sum())
+    total_revenue = float(df["revenue"].sum())
+
+    daily_roas = (
+        df.groupby("date")["roas"].mean().reset_index().to_dict("records")
+        if "date" in df.columns and not df["date"].isnull().all()
+        else []
+    )
 
     global_summary = {
-        "start_date": str(df["date"].min()) if not df["date"].isnull().all() else None,
-        "end_date": str(df["date"].max()) if not df["date"].isnull().all() else None,
-        "total_spend": float(df["spend"].sum()),
-        "total_revenue": float(df["revenue"].sum()),
-        "daily_roas": df.groupby("date")["roas"].mean().reset_index().to_dict("records"),
+        "start_date": str(df["date"].min()) if "date" in df.columns and not df["date"].isnull().all() else None,
+        "end_date": str(df["date"].max()) if "date" in df.columns and not df["date"].isnull().all() else None,
+        "total_spend": total_spend,
+        "total_revenue": total_revenue,
+        "daily_roas": daily_roas,
     }
 
     by_campaign = (
@@ -87,13 +113,22 @@ def summarize(df: pd.DataFrame) -> Dict:
                 "spend": "sum",
                 "impressions": "sum",
                 "clicks": "sum",
+                "purchases": "sum",
                 "revenue": "sum",
             }
         )
         .reset_index()
     )
 
-    by_campaign["ctr"] = by_campaign["clicks"] / by_campaign["impressions"].replace(0, 1)
-    by_campaign["roas"] = by_campaign["revenue"] / by_campaign["spend"].replace(0, 1)
+    # safe computations for ctr and roas
+    if not by_campaign.empty:
+        by_campaign["ctr"] = (
+            by_campaign["clicks"] / by_campaign["impressions"].replace(0, 1)
+        )
+        by_campaign["roas"] = (
+            by_campaign["revenue"] / by_campaign["spend"].replace(0, 1)
+        )
+    else:
+        by_campaign = by_campaign.assign(ctr=[], roas=[])
 
     return {"global": global_summary, "by_campaign": by_campaign.to_dict("records")}

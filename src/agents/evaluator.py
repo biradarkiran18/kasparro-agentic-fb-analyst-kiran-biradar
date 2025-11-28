@@ -1,120 +1,89 @@
-import math
-from typing import Any, Dict, List, Tuple
+# src/agents/evaluator.py
+import numpy as np
+from typing import List, Dict, Any, Tuple
 
 
-def _is_number(x) -> bool:
-    try:
-        return not math.isnan(float(x))
-    except Exception:
-        return False
+def _safe_get_daily_roas(summary: Dict[str, Any]) -> List[Dict[str, Any]]:
+    g = summary.get("global", {})
+    return g.get("daily_roas", []) if isinstance(g, dict) else []
 
 
-def _safe_float(x, default: float = 0.0) -> float:
-    try:
-        return float(x)
-    except Exception:
-        return default
-
-
-def validate(hypotheses: List[Dict[str, Any]], summary: Dict[str, Any], thresholds: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def validate(
+    hypotheses: List[Dict[str, Any]],
+    summary: Dict[str, Any],
+    thresholds: Dict[str, Any],
+) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
-    Returns (validated_hypotheses_list, metrics)
-    metrics contains counts and small rules summary.
+    Validate list of hypotheses against summary and thresholds.
+
+    Returns:
+        (validated_hypotheses, metrics)
     """
-    ctr_thresh = float(thresholds.get("ctr_low_threshold", 0.01))
-    roas_drop_thresh = float(thresholds.get("roas_drop_threshold", 0.2))
-    min_conf = float(thresholds.get("confidence_min", 0.5))
+    out: List[Dict[str, Any]] = []
+    by_campaign = summary.get("by_campaign", []) or []
 
-    out = []
-    stats = {"total": 0, "validated": 0, "rule_counts": {}}
+    # top by spend (safe)
+    top = sorted(
+        by_campaign,
+        key=lambda x: x.get("spend", 0),
+        reverse=True,
+    )[:5]
 
-    by_campaign = summary.get("by_campaign") or []
-    campaigns = by_campaign if isinstance(by_campaign, list) else []
+    mean_ctr = float(np.mean([c.get("ctr", 0) for c in top])) if top else 0.0
 
-    # consider only campaigns with minimum impressions to avoid noise
-    min_impressions = int(thresholds.get("min_impressions", 100))
-    top_candidates = [c for c in campaigns if float(c.get("impressions", 0)) >= min_impressions]
-    top = sorted(top_candidates, key=lambda x: float(x.get("spend", 0)), reverse=True)[:5]
+    daily = _safe_get_daily_roas(summary)
+    roas_last = daily[-1].get("roas", 0) if daily else 0
+    roas_prev = daily[-3].get("roas", roas_last) if len(daily) >= 3 else roas_last
+    roas_drop = (roas_prev - roas_last) / max(roas_prev, 1e-6)
 
-    mean_ctr = 0.0
-    if top:
-        ctrs = [float(c.get("ctr", 0.0)) for c in top]
-        mean_ctr = sum(ctrs) / len(ctrs)
-
-    daily = summary.get("global", {}).get("daily_roas", []) or []
-    roas_last = _safe_float(daily[-1].get("roas") if daily and isinstance(daily[-1], dict)
-                            else (daily[-1] if daily else 0), 0)
-    roas_prev = roas_last
-    if len(daily) >= 3:
-        prev = daily[-3]
-        roas_prev = _safe_float(prev.get("roas") if isinstance(prev, dict) else prev, roas_last)
-
-    roas_drop = 0.0
-    if roas_prev and abs(roas_prev) > 0:
-        roas_drop = (roas_prev - roas_last) / max(abs(roas_prev), 1e-9)
-
-    for h in (hypotheses or []):
-        stats["total"] += 1
-        reasons = []
-        initial_conf = h.get("initial_confidence", h.get("confidence", 0.0))
-        if not _is_number(initial_conf):
-            initial_conf = 0.0
-            reasons.append("confidence_not_numeric")
-        conf = float(initial_conf)
-        validated_flag = False
-        text = (h.get("hypothesis") or "").lower()
-
-        # rule: creative fatigue -> low CTR among top spend
-        if "creative fatigue" in text or "creative" in text and "fatigue" in text:
-            if mean_ctr < ctr_thresh:
-                validated_flag = True
-                conf = max(conf, 0.8)
-                reasons.append(f"mean_ctr_{mean_ctr:.4f}_below_thresh")
-            else:
-                reasons.append(f"mean_ctr_{mean_ctr:.4f}_not_below_thresh")
-
-        # rule: ROAS decline detection
-        if any(k in text for k in ("declin", "drop", "roas")):
-            if roas_drop > roas_drop_thresh:
-                validated_flag = True
-                conf = max(conf, 0.75)
-                reasons.append(f"roas_drop_{roas_drop:.4f}_above_thresh")
-            else:
-                reasons.append(f"roas_drop_{roas_drop:.4f}_not_above_thresh")
-
-        # small sample adjustment
+    for h in hypotheses or []:
+        # default to False when fields are missing or invalid
+        validated = False
         try:
-            sample_indicator = summary.get("global", {}).get("total_spend")
-            if sample_indicator is not None and float(sample_indicator) < float(thresholds.get("small_sample_spend", 10.0)):
-                conf *= 0.8
-                reasons.append("small_sample_adjustment")
+            conf = float(h.get("initial_confidence", 0.5))
         except Exception:
-            pass
+            conf = 0.5
+        notes: List[str] = []
 
-        conf = max(0.0, min(1.0, float(conf)))
-        validated_flag = bool(validated_flag and (conf >= min_conf))
+        hyp_text = str(h.get("hypothesis", "")).lower()
 
-        for r in reasons:
-            stats["rule_counts"].setdefault(r, 0)
-            stats["rule_counts"][r] += 1
-        if validated_flag:
-            stats["validated"] += 1
+        # creative fatigue check
+        if "creative fatigue" in hyp_text or (
+            "creative" in hyp_text and "fatigue" in hyp_text
+        ):
+            if mean_ctr < thresholds.get("ctr_low_threshold", 0.01):
+                validated = True
+                conf = max(conf, 0.8)
+                notes.append(f"mean_ctr={mean_ctr}")
+            else:
+                validated = False
+
+        # roas decline/drop check
+        if "declined" in hyp_text or "drop" in hyp_text or "decrease" in hyp_text:
+            if roas_drop > thresholds.get("roas_drop_threshold", 0.2):
+                validated = True
+                conf = max(conf, 0.75)
+                notes.append(f"roas_drop={roas_drop}")
+            else:
+                # if other checks didn't mark it true, keep False
+                validated = validated and True
 
         out.append(
             {
                 "id": h.get("id"),
                 "hypothesis": h.get("hypothesis"),
-                "validated": bool(validated_flag),
-                "final_confidence": float(conf),
-                "metrics_used": ["ctr", "roas"],
-                "notes": reasons,
+                "validated": validated,
+                "final_confidence": conf,
+                "metrics_used": h.get("metrics_used", ["ctr", "roas"]),
+                "notes": notes,
             }
         )
 
     metrics = {
-        "num_hypotheses": stats["total"],
-        "num_validated": stats["validated"],
-        "validation_rate": (stats["validated"] / stats["total"]) if stats["total"] else 0.0,
-        "rules_failed_summary": stats["rule_counts"],
+        "num_hypotheses": len(hypotheses or []),
+        "num_validated": sum(1 for x in out if x.get("validated")),
+        "validation_rate": sum(1 for x in out if x.get("validated"))
+        / max(len(hypotheses or []), 1),
     }
+
     return out, metrics
