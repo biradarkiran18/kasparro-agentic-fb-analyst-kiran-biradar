@@ -1,4 +1,3 @@
-# src/agents/evaluator.py
 import numpy as np
 from typing import List, Dict, Any, Tuple
 
@@ -14,7 +13,7 @@ def validate(
     thresholds: Dict[str, Any],
 ) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
     """
-    Validate list of hypotheses against summary and thresholds.
+    Validate hypotheses against the provided summary and thresholds.
 
     Returns:
         (validated_hypotheses, metrics)
@@ -22,7 +21,6 @@ def validate(
     out: List[Dict[str, Any]] = []
     by_campaign = summary.get("by_campaign", []) or []
 
-    # top by spend (safe)
     top = sorted(
         by_campaign,
         key=lambda x: x.get("spend", 0),
@@ -37,7 +35,6 @@ def validate(
     roas_drop = (roas_prev - roas_last) / max(roas_prev, 1e-6)
 
     for h in hypotheses or []:
-        # default to False when fields are missing or invalid
         validated = False
         try:
             conf = float(h.get("initial_confidence", 0.5))
@@ -47,7 +44,6 @@ def validate(
 
         hyp_text = str(h.get("hypothesis", "")).lower()
 
-        # creative fatigue check
         if "creative fatigue" in hyp_text or (
             "creative" in hyp_text and "fatigue" in hyp_text
         ):
@@ -58,15 +54,14 @@ def validate(
             else:
                 validated = False
 
-        # roas decline/drop check
         if "declined" in hyp_text or "drop" in hyp_text or "decrease" in hyp_text:
             if roas_drop > thresholds.get("roas_drop_threshold", 0.2):
                 validated = True
                 conf = max(conf, 0.75)
                 notes.append(f"roas_drop={roas_drop}")
             else:
-                # if other checks didn't mark it true, keep False
-                validated = validated and True
+                # do not flip a previously validated hypothesis to False here
+                validated = bool(validated)
 
         out.append(
             {
