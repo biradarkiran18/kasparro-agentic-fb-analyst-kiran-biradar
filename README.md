@@ -3,7 +3,7 @@
 A fully local, production-grade, multi-agent pipeline for analyzing Facebook Ads performance.  
 Implements a complete agent chain (Planner → Data → Insight → Evaluator → Creative Generator) with strong observability, schema validation, reproducibility, and deterministic outputs.
 
-This is v1.1 — upgraded based on reviewer feedback to include:
+This is v1.1 — upgraded:
 - Evaluator hardening (threshold control, structured metrics, reliability)
 - Schema fingerprinting + drift detection
 - Detailed observability logs (start/end events, per-agent traces)
