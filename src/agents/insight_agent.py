@@ -1,20 +1,19 @@
-def generate_hypotheses(summary: dict, confidence_min=0.6):
+from typing import Dict, List
+
+
+def generate_hypotheses(summary: Dict, confidence_min: float = 0.6) -> List[Dict]:
     hyps = []
-    daily = summary["global"]["daily_roas"]
+    daily = summary.get("global", {}).get("daily_roas", []) or []
 
     if len(daily) >= 3:
-        last = daily[-1]["roas"]
-        prev = daily[-3]["roas"]
-        drop = (prev - last) / max(prev, 1e-6)
+        last = float(daily[-1].get("roas") if isinstance(daily[-1], dict) else daily[-1])
+        prev = float(daily[-3].get("roas") if isinstance(daily[-3], dict) else daily[-3])
+        drop = (prev - last) / max(abs(prev), 1e-9)
         hyps.append(
             {
                 "id": "H1",
                 "hypothesis": "ROAS has declined in the last 3 days",
-                "rationale": [
-                    "computed 3-day delta",
-                    f"roas_prev={prev}",
-                    f"roas_last={last}",
-                ],
+                "rationale": ["computed 3-day delta", f"roas_prev={prev}", f"roas_last={last}"],
                 "evidence_from_summary": [f"drop_ratio={drop}"],
                 "initial_confidence": 0.8 if drop > 0.1 else 0.5,
             }
@@ -31,10 +30,7 @@ def generate_hypotheses(summary: dict, confidence_min=0.6):
     )
 
     for h in hyps:
-        if h["initial_confidence"] < confidence_min:
-            h["refine_request"] = {
-                "need": ["extra aggregates"],
-                "reason": "low confidence",
-            }
+        if h.get("initial_confidence", 0) < confidence_min:
+            h["refine_request"] = {"need": ["extra aggregates"], "reason": "low confidence"}
 
     return hyps

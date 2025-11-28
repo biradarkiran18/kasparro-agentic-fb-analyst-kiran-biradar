@@ -1,10 +1,12 @@
 {
   "query": "Analyze ROAS drop in last 7 days",
-  "start_ts": "2025-11-28T14:52:00.404109Z",
-  "run_ts": "2025-11-28T14:52:00.413874Z",
+  "start_ts": "2025-11-28T15:35:11.809973Z",
+  "run_ts": "2025-11-28T15:35:11.820296Z",
   "num_hypotheses": 2,
   "num_validated": 0,
   "validation_rate": 0.0,
   "num_creatives": 9,
-  "generated_at": "2025-11-28T14:52:00.413885Z"
+  "metrics_version": "v1",
+  "duration_ms": 10,
+  "generated_at": "2025-11-28T15:35:11.820539Z"
 }

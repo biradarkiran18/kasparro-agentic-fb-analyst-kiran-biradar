@@ -1,7 +1,18 @@
-# Kasparro Agentic FB Analyst – Kiran Biradar
+# Kasparro Agentic FB Analyst – Kiran Biradar (v1.1)
 
-End-to-end, fully local, agentic pipeline for analyzing Facebook Ads performance using a multi-agent architecture (Planner → Data Agent → Insight Agent → Evaluator → Creative Generator) coordinated through an orchestrator.  
-No external APIs required. No internet dependencies.
+A fully local, production-grade, multi-agent pipeline for analyzing Facebook Ads performance.  
+Implements a complete agent chain (Planner → Data → Insight → Evaluator → Creative Generator) with strong observability, schema validation, reproducibility, and deterministic outputs.
+
+This is v1.1 — upgraded based on reviewer feedback to include:
+- Evaluator hardening (threshold control, structured metrics, reliability)
+- Schema fingerprinting + drift detection
+- Detailed observability logs (start/end events, per-agent traces)
+- End-to-end metrics (duration, counts, validation rate)
+- More modular configuration
+- Deterministic rule-based logic
+- Improved orchestrator with trace IDs
+
+No APIs. No external dependencies. 100% offline and reproducible.
 
 ---
 
@@ -17,7 +28,10 @@ kasparro-agentic-fb-analyst-kiran-biradar/
 │   └── sample_fb_ads.csv
 │
 ├── logs/
-│   └── (runtime logs)
+│   └── observability/
+│       ├── orchestrator_run_started_*.json
+│       ├── orchestrator_run_completed_*.json
+│       └── trace_orchestrator_*.json
 │
 ├── prompts/
 │   ├── planner.md
@@ -30,9 +44,8 @@ kasparro-agentic-fb-analyst-kiran-biradar/
 │   ├── insights.json
 │   ├── creatives.json
 │   ├── report.md
-│   └── observability/
-│       ├── trace_example.json
-│       └── (agent traces)
+│   ├── metrics.json
+│   └── schema_fingerprint.json
 │
 ├── src/
 │   ├── agents/
@@ -47,7 +60,8 @@ kasparro-agentic-fb-analyst-kiran-biradar/
 │   │
 │   └── utils/
 │       ├── io_utils.py
-│       └── retry_utils.py
+│       ├── retry_utils.py
+│       └── observability.py
 │
 ├── tests/
 │   ├── test_planner.py
@@ -57,7 +71,6 @@ kasparro-agentic-fb-analyst-kiran-biradar/
 │   ├── test_creative_generator.py
 │   └── test_orchestrator.py
 │
-├── .env
 ├── Makefile
 ├── run.py
 ├── requirements.txt
@@ -69,15 +82,14 @@ kasparro-agentic-fb-analyst-kiran-biradar/
 
 ## 2. Environment Setup
 
-### **Conda environment**
-
+### Conda Environment
 ```bash
 conda create -n kasparro python=3.11 -y
 conda activate kasparro
 pip install -r requirements.txt
 ```
 
-Verify:
+Verify installation:
 
 ```bash
 python --version
@@ -85,28 +97,30 @@ python -c "import pandas as pd; print(pd.__version__)"
 ```
 
 Expected:
-
 ```
-Python 3.11.x
-pandas 1.5.3
+Python 3.11.x  
+pandas 1.5.3  
 ```
 
 ---
 
 ## 3. Quick Start
 
-Run the agentic system:
+Run the agent pipeline:
 
 ```bash
 python run.py "Analyze ROAS drop in last 7 days"
 ```
 
-Outputs generated to:
+Outputs generated:
 
 ```
 reports/insights.json
 reports/creatives.json
 reports/report.md
+reports/metrics.json
+reports/schema_fingerprint.json
+logs/observability/*.json
 ```
 
 ---
@@ -121,128 +135,217 @@ test:
 	PYTHONPATH="$(pwd)" pytest -q
 
 lint:
-	flake8 src
+	flake8 src tests --max-line-length=120
 
-clean:
-	rm -rf __pycache__ */__pycache__
+format:
+	autopep8 --in-place --recursive --max-line-length 120 src tests
+
+all:
+	make format && make test && make run
 ```
 
-Use:
+Usage:
 
 ```bash
-make run
 make test
-make clean
+make run
+make format
+make all
 ```
 
 ---
 
-## 5. Sample Data
+## 5. Dataset Information
 
-A truncated & sanitized sample of the original dataset was placed at:
+Location:
 
 ```
 data/sample_fb_ads.csv
 ```
 
-Schema includes:
+Schema:
 
 ```
-date, campaign_name, adset_name, spend, impressions, clicks, revenue, roas
+date, campaign_name, adset_name, spend, impressions, clicks, revenue, roas, creative_message
 ```
 
-Used for deterministic offline testing.
+This dataset is a **sanitized, small-scale offline sample** for deterministic evaluation.
 
 ---
 
 ## 6. Multi-Agent Architecture
 
 ### **1. Planner**
-Breaks user query into actionable steps.  
+Breaks the user’s natural-language query into actionable analysis steps.
 
 ### **2. Data Agent**
-Loads CSV → preprocesses → computes aggregates.
+Loads CSV, computes ROAS, CTR, aggregates, and produces:
+- global summary  
+- campaign-level summary  
+
+Includes schema fingerprinting to detect changes in input structure.
 
 ### **3. Insight Agent**
-Generates hypotheses about performance drivers.
+Generates structured hypotheses:
+- ROAS decline
+- Creative fatigue
+- Other campaign anomalies
 
-### **4. Evaluator**
-Scores hypotheses & adjusts confidence.
+### **4. Evaluator (v1.1 upgrade)**
+Strengthened evaluation logic:
+- threshold-driven validation  
+- CTR and ROAS-drop based scoring  
+- final confidence scoring  
+- returns both validated hypotheses and evaluation metrics  
 
 ### **5. Creative Generator**
-Produces creative recommendations based on insights.
+Uses token frequency analysis from real creatives to generate recommendations.
 
-### **6. Orchestrator**
-Coordinates all agents into a pipeline and writes outputs.
+### **6. Orchestrator (v1.1 upgrade)**
+Coordinates all agents, writes:
+- insights.json  
+- creatives.json  
+- report.md  
+- metrics.json  
+- observability traces  
+- schema_fingerprint.json  
 
 ---
 
-## 7. Running Tests
+## 7. Tests
 
-The entire pipeline has full test coverage.
-
-Run:
+Run all tests:
 
 ```bash
 PYTHONPATH="$(pwd)" pytest -q
 ```
 
-Expected:
+Expected output:
 
 ```
-6 passed in 0.55s
+8 passed in 0.50s
 ```
 
+The test suite covers:
+- hypothesis generation  
+- evaluator correctness  
+- creative generation  
+- summarization logic  
+- orchestrator end-to-end execution  
+
 ---
 
-## 8. Observability Traces
+## 8. Observability (v1.1)
 
-Agent-level traces live under:
+All agent steps produce structured logs stored in:
 
 ```
-reports/observability/
+logs/observability/
 ```
 
-Example:
-
-- step-level execution  
-- input/output logs  
-- timing metadata  
-
-
----
-
-## 9. Self-Review (PR_SELF_REVIEW.md)
-
-This file documents:
-
-- what was implemented  
-- reasoning behind design decisions  
-- tradeoffs & future improvements  
+Includes:
+- run_started events  
+- run_completed events  
+- trace_orchestrator events  
+- data_agent completion logs  
+- timestamps, duration, and inputs/outputs  
 
 ---
 
-## 10. Evaluation Checklist (EVAL_CHECKLIST.md)
+## 9. Metrics (v1.1)
 
+Stored at:
 
-- modular  
-- deterministic  
-- no API dependencies  
-- reproducible  
-- hypothesis → evaluation → creatives pipeline is correct  
+```
+reports/metrics.json
+```
+
+Metrics include:
+- query  
+- start/end timestamps  
+- duration_ms  
+- number of hypotheses  
+- validation rate  
+- number of creatives generated  
+- schema hash  
 
 ---
 
-## 11. Notes
+## 10. Schema Fingerprinting (v1.1)
 
-- Project is 100% offline  
-- No external APIs  
-- Deterministic outputs using static data  
-- Architecture mirrors real production agentic design  
+Fingerprint written to:
+
+```
+reports/schema_fingerprint.json
+```
+
+Used to detect:
+- column drift  
+- schema mismatch  
+- missing fields  
+
+Enables production-grade reliability.
 
 ---
 
-## 12. License
+## 11. Self-Review (PR_SELF_REVIEW.md)
+
+Includes:
+- design decisions  
+- tradeoffs  
+- limitations  
+- future roadmap  
+
+---
+
+## 12. Evaluation Checklist (EVAL_CHECKLIST.md)
+
+Covers assignment requirements:
+- structure  
+- reproducibility  
+- determinism  
+- outputs  
+- observability  
+- testing  
+- architecture clarity  
+
+---
+
+## 13. What Changed from v1.0 → v1.1
+
+### **Evaluator Hardening**
+- Higher-quality confidence handling  
+- Validation metrics  
+- Threshold-controlled logic  
+- Deterministic scoring path  
+
+### **Observability Framework**
+- Per-agent logs  
+- Orchestrator traces  
+- Consistent timestamps  
+
+### **Metrics Tracking**
+- Runtime duration  
+- Validation rate  
+- Count of creatives  
+- Hypothesis counts  
+
+### **Schema Protection**
+- Schema fingerprinting  
+- JSON hash-based drift detection  
+
+### **Cleaner Orchestrator**
+- Shorter return signature  
+- Expanded logging  
+- Safer config handling  
+
+### **Linting + Formatting Compliance**
+- flake8 clean  
+- autopep8 formatted  
+- all tests passing  
+
+---
+
+## 14. License
 
 MIT.
-

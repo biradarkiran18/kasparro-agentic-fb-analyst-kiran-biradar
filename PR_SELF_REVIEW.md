@@ -1,23 +1,49 @@
-# Self-review — Kasparro Agentic FB Analyst
+# Self-Review — v1.1 Upgrade
 
-## What I built
-- Modular pipeline: planner, data-agent, insight-agent, evaluator, creative-generator, orchestrator.
-- Sample dataset (500 rows) with config toggle to switch between sample and full dataset.
-- Tests covering each agent (6 passed).
-- Generated output: reports/insights.json, reports/creatives.json, reports/report.md.
-- Observability example stored under reports/observability/.
+## Overview
+This PR upgrades the system from a functional prototype to a production-ready offline agent pipeline. The core goal was to increase reliability, observability, determinism, and evaluation clarity.
 
-## How it meets the assignment brief
-- Required artifacts included.
-- LLM-first agent flow implemented.
-- Reproducibility instructions present.
-- Clear modular structure.
+## What Was Improved
 
-## Known limitations
-- Creative generator uses rule patterns.
-- Insight validation is minimal; can be extended with real LLM scoring.
+### 1. Evaluator Hardening
+- Added CTR and ROAS threshold logic
+- Structured validation metrics
+- Deterministic score rules
+- Removed ambiguity in hypothesis validation
 
-## Recommended next steps
-1. Add Langfuse observability.
-2. Add RAG-based creative inspiration.
-3. Add CI to run tests and publish artifacts.
+### 2. Observability Framework
+- Added run_started / run_completed events
+- Per-agent trace logs
+- Orchestrator-level tracing
+- Unique run timestamps with ISO8601 Zulu format
+
+### 3. Metrics
+- Added central metrics file  
+- Includes duration_ms, hypothesis counts, creative count  
+- Ensures reproducibility and monitoring capability
+
+### 4. Schema Fingerprinting
+- Added dataset schema hashing  
+- Protects against column drift  
+- Logged for every run
+
+### 5. Code Quality
+- Reformatted entire repo via autopep8  
+- Ensured flake8 compliance  
+- Tightened import hygiene
+
+### 6. Orchestrator Reliability
+- Returns only (insights, creatives) per test requirements  
+- Added deterministic ID handling  
+- Config-driven observability outputs
+
+## Why These Changes Matter
+The assignment required production maturity — not just working logic.  
+These changes demonstrate reliability, traceability, and clarity.
+
+## Next Steps (Optional Improvements)
+- Add anomaly alerting rules  
+- Paginate large CSVs  
+- Introduce stream-based observability  
+
+This PR completes the v1.1 upgrade and prepares the system for final evaluation.

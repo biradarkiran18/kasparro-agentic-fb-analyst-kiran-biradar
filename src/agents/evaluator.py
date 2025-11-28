@@ -1,6 +1,5 @@
 import math
-from typing import List, Dict, Any, Tuple
-from datetime import datetime
+from typing import Any, Dict, List, Tuple
 
 
 def _is_number(x) -> bool:
@@ -17,18 +16,26 @@ def _safe_float(x, default: float = 0.0) -> float:
         return default
 
 
-def validate(hypotheses, summary, thresholds) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+def validate(hypotheses: List[Dict[str, Any]], summary: Dict[str, Any], thresholds: Dict[str, Any]) -> Tuple[List[Dict[str, Any]], Dict[str, Any]]:
+    """
+    Returns (validated_hypotheses_list, metrics)
+    metrics contains counts and small rules summary.
+    """
     ctr_thresh = float(thresholds.get("ctr_low_threshold", 0.01))
     roas_drop_thresh = float(thresholds.get("roas_drop_threshold", 0.2))
     min_conf = float(thresholds.get("confidence_min", 0.5))
 
     out = []
-    stats = {"total": 0, "validated": 0, "rules_failed": {}}
+    stats = {"total": 0, "validated": 0, "rule_counts": {}}
 
     by_campaign = summary.get("by_campaign") or []
     campaigns = by_campaign if isinstance(by_campaign, list) else []
 
-    top = sorted(campaigns, key=lambda x: float(x.get("spend", 0)), reverse=True)[:5]
+    # consider only campaigns with minimum impressions to avoid noise
+    min_impressions = int(thresholds.get("min_impressions", 100))
+    top_candidates = [c for c in campaigns if float(c.get("impressions", 0)) >= min_impressions]
+    top = sorted(top_candidates, key=lambda x: float(x.get("spend", 0)), reverse=True)[:5]
+
     mean_ctr = 0.0
     if top:
         ctrs = [float(c.get("ctr", 0.0)) for c in top]
@@ -57,7 +64,8 @@ def validate(hypotheses, summary, thresholds) -> Tuple[List[Dict[str, Any]], Dic
         validated_flag = False
         text = (h.get("hypothesis") or "").lower()
 
-        if "creative fatigue" in text or "creative fatigue" in text:
+        # rule: creative fatigue -> low CTR among top spend
+        if "creative fatigue" in text or "creative" in text and "fatigue" in text:
             if mean_ctr < ctr_thresh:
                 validated_flag = True
                 conf = max(conf, 0.8)
@@ -65,6 +73,7 @@ def validate(hypotheses, summary, thresholds) -> Tuple[List[Dict[str, Any]], Dic
             else:
                 reasons.append(f"mean_ctr_{mean_ctr:.4f}_not_below_thresh")
 
+        # rule: ROAS decline detection
         if any(k in text for k in ("declin", "drop", "roas")):
             if roas_drop > roas_drop_thresh:
                 validated_flag = True
@@ -73,20 +82,21 @@ def validate(hypotheses, summary, thresholds) -> Tuple[List[Dict[str, Any]], Dic
             else:
                 reasons.append(f"roas_drop_{roas_drop:.4f}_not_above_thresh")
 
-        sample_indicator = summary.get("global", {}).get("total_spend") or summary.get("total_spend")
+        # small sample adjustment
         try:
-            if sample_indicator is not None and float(sample_indicator) < 10:
+            sample_indicator = summary.get("global", {}).get("total_spend")
+            if sample_indicator is not None and float(sample_indicator) < float(thresholds.get("small_sample_spend", 10.0)):
                 conf *= 0.8
                 reasons.append("small_sample_adjustment")
         except Exception:
             pass
 
         conf = max(0.0, min(1.0, float(conf)))
-        validated_flag = validated_flag and (conf >= min_conf)
+        validated_flag = bool(validated_flag and (conf >= min_conf))
 
         for r in reasons:
-            stats["rules_failed"].setdefault(r, 0)
-            stats["rules_failed"][r] += 1
+            stats["rule_counts"].setdefault(r, 0)
+            stats["rule_counts"][r] += 1
         if validated_flag:
             stats["validated"] += 1
 
@@ -105,6 +115,6 @@ def validate(hypotheses, summary, thresholds) -> Tuple[List[Dict[str, Any]], Dic
         "num_hypotheses": stats["total"],
         "num_validated": stats["validated"],
         "validation_rate": (stats["validated"] / stats["total"]) if stats["total"] else 0.0,
-        "rules_failed_summary": stats["rules_failed"],
+        "rules_failed_summary": stats["rule_counts"],
     }
     return out, metrics
