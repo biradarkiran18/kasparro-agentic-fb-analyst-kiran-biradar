@@ -4,7 +4,6 @@ from src.utils.thresholds import compute_dynamic_thresholds
 
 def make_sample_df():
     dates = pd.date_range("2025-01-01", periods=40, freq="D")
-    # create trend: impressions constant, clicks ~ binomial so CTR small stable, revenue/spend fluctuates
     data = {
         "date": list(dates),
         "campaign_name": ["A"] * len(dates),
