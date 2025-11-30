@@ -1,7 +1,7 @@
 {
   "query": "test query",
-  "start_ts": "2025-11-30T13:01:22.477410Z",
-  "run_ts": "2025-11-30T13:01:22.499029Z",
+  "start_ts": "2025-11-30T13:19:48.172999Z",
+  "run_ts": "2025-11-30T13:19:48.189244Z",
   "num_hypotheses": 2,
   "num_validated": 0,
   "validation_rate": 0.0,
@@ -10,6 +10,6 @@
   "metrics_version": "v1",
   "dyn_ctr_low_threshold": 0.01075177991332213,
   "dyn_roas_drop_threshold": 0.48565501867363564,
-  "duration_ms": 21,
-  "generated_at": "2025-11-30T13:01:22.499283Z"
+  "duration_ms": 16,
+  "generated_at": "2025-11-30T13:19:48.189498Z"
 }
