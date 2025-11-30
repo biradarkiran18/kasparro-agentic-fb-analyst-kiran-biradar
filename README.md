@@ -1,4 +1,4 @@
-# Agentic FB Ads Analytics Pipeline – Kiran Biradar (v1.3)
+# Agentic FB Ads Analytics Pipeline – Kiran Biradar 
 
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)]()
 [![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)]()
@@ -8,7 +8,7 @@ A fully local, deterministic pipeline for analyzing Facebook Ads performance.
 The system is built around a set of cooperating agents (Planner → Data → Insight → Evaluator → Creative Generator) orchestrated in a reproducible, test-driven workflow.  
 All computations run offline. No API calls. No external services.
 
-Version **v1.3** includes:
+New Version includes:
 
 - Dynamic CTR / ROAS threshold computation from historical data  
 - Schema fingerprinting + drift detection  
@@ -370,7 +370,7 @@ Covers:
 
 ---
 
-## 13. Summary of v1.3 Changes
+## 13. Summary of Changes
 
 - Dynamic threshold computation (CTR / ROAS) added  
 - Schema fingerprinting written + drift detection added  
