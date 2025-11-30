@@ -1,49 +1,60 @@
-# Self-Review — v1.1 Upgrade
+# Self-Review
 
-## Overview
-This PR upgrades the system from a functional prototype to a production-ready offline agent pipeline. The core goal was to increase reliability, observability, determinism, and evaluation clarity.
+This document summarizes the choices I made while building the project, what I focused on, and what I would improve if I had more time.
 
-## What Was Improved
+## 1. What the project does
+The project loads a Facebook Ads dataset, summarizes the numbers, forms basic hypotheses about performance changes, checks those hypotheses against the data, and then generates simple creative suggestions for low-CTR campaigns. The flow is organized across separate modules to keep things understandable and maintainable.
 
-### 1. Evaluator Hardening
-- Added CTR and ROAS threshold logic
-- Structured validation metrics
-- Deterministic score rules
-- Removed ambiguity in hypothesis validation
+## 2. Design decisions
 
-### 2. Observability Framework
-- Added run_started / run_completed events
-- Per-agent trace logs
-- Orchestrator-level tracing
-- Unique run timestamps with ISO8601 Zulu format
+### a. Keep things local and simple  
+I designed everything to run offline. There are no external API calls. All logic is inside pure Python modules. This keeps the behavior stable and easy to test.
 
-### 3. Metrics
-- Added central metrics file  
-- Includes duration_ms, hypothesis counts, creative count  
-- Ensures reproducibility and monitoring capability
+### b. Use small, clear modules  
+I separated logic into:
+- data loading and summary  
+- hypothesis creation  
+- validation  
+- creative suggestion  
+- an orchestrator to connect all of them  
 
-### 4. Schema Fingerprinting
-- Added dataset schema hashing  
-- Protects against column drift  
-- Logged for every run
+This makes it easy to test each part individually.
 
-### 5. Code Quality
-- Reformatted entire repo via autopep8  
-- Ensured flake8 compliance  
-- Tightened import hygiene
+### c. Prefer explicit rules  
+Instead of relying on ML models or unpredictable logic, I used straightforward rules:
+- CTR thresholds  
+- ROAS comparisons  
+- confidence adjustments  
+These are clear, easy to verify, and behave consistently.
 
-### 6. Orchestrator Reliability
-- Returns only (insights, creatives) per test requirements  
-- Added deterministic ID handling  
-- Config-driven observability outputs
+### d. Add basic logging  
+Each major step writes a short log entry to help understand what happened in a run.  
+This keeps the pipeline easy to debug without introducing heavy tooling.
 
-## Why These Changes Matter
-The assignment required production maturity — not just working logic.  
-These changes demonstrate reliability, traceability, and clarity.
+### e. Keep tests simple and meaningful  
+I wrote tests that check:
+- data summarization  
+- hypothesis evaluation  
+- creative generation  
+- basic orchestration  
+These give confidence that the core pieces work as expected.
 
-## Next Steps (Optional Improvements)
-- Add anomaly alerting rules  
-- Paginate large CSVs  
-- Introduce stream-based observability  
+## 3. What could be improved later
 
-This PR completes the v1.1 upgrade and prepares the system for final evaluation.
+### a. Broader hypothesis coverage  
+Right now the hypotheses focus mainly on ROAS changes and creative fatigue.  
+More conditions (cost spikes, impression drops, etc.) could be added.
+
+### b. More flexible thresholds  
+The thresholds are static. They could be adjusted based on recent averages or moving windows.
+
+### c. More detailed reporting  
+The current reports are useful, but adding short explanations or comparisons (e.g., week-over-week changes) would help make the output more informative.
+
+### d. Better log organization  
+Logs work fine but could benefit from timestamps grouped by run or a cleaner naming pattern.
+
+## 4. Summary
+The project is stable, readable, and test-covered.  
+It performs the intended analysis consistently.  
+If extended, I would focus on expanding hypothesis logic, improving reporting depth, and refining the logging layout.

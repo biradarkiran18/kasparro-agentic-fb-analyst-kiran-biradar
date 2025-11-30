@@ -3,28 +3,22 @@
     "id": "H1",
     "hypothesis": "ROAS has declined in the last 3 days",
     "validated": false,
-    "final_confidence": 0.6,
+    "final_confidence": 0.5,
     "metrics_used": [
       "ctr",
       "roas"
     ],
-    "notes": [
-      "roas_drop_-2.5224_not_above_thresh",
-      "confidence adjusted using extra aggregates"
-    ]
+    "notes": []
   },
   {
     "id": "H2",
     "hypothesis": "Creative fatigue in top spend campaigns",
     "validated": false,
-    "final_confidence": 0.6,
+    "final_confidence": 0.5,
     "metrics_used": [
       "ctr",
       "roas"
     ],
-    "notes": [
-      "mean_ctr_0.0154_not_below_thresh",
-      "confidence adjusted using extra aggregates"
-    ]
+    "notes": []
   }
 ]

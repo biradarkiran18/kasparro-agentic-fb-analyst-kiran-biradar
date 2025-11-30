@@ -1,5 +1,5 @@
-# Kasparro Agentic FB Analyst Report
-Query: Analyze ROAS drop in last 7 days
-Run time: 2025-11-28T15:35:11.820687Z
+# Agentic FB Analyst Report
+Query: test query
+Run time: 2025-11-30T12:31:53.581376Z
 
 Insights and creatives saved to reports/.

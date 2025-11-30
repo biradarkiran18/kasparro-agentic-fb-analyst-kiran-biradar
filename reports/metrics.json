@@ -1,12 +1,15 @@
 {
-  "query": "Analyze ROAS drop in last 7 days",
-  "start_ts": "2025-11-28T15:35:11.809973Z",
-  "run_ts": "2025-11-28T15:35:11.820296Z",
+  "query": "test query",
+  "start_ts": "2025-11-30T12:31:53.563930Z",
+  "run_ts": "2025-11-30T12:31:53.580954Z",
   "num_hypotheses": 2,
   "num_validated": 0,
   "validation_rate": 0.0,
   "num_creatives": 9,
+  "rows_in_input": 0,
   "metrics_version": "v1",
-  "duration_ms": 10,
-  "generated_at": "2025-11-28T15:35:11.820539Z"
+  "dyn_ctr_low_threshold": 0.01075177991332213,
+  "dyn_roas_drop_threshold": 0.48565501867363564,
+  "duration_ms": 17,
+  "generated_at": "2025-11-30T12:31:53.581228Z"
 }

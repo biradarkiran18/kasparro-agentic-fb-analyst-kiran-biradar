@@ -1,21 +1,62 @@
-# EVAL_CHECKLIST — Completed
+# Evaluation Checklist
 
-- [x] Public GitHub repo created: <https://github.com/biradarkiran18/kasparro-agentic-fb-analyst-kiran-biradar.git>
-- [x] README with setup & run instructions
-- [x] insights.json, creatives.json, report.md included under reports/
-- [x] Observability trace example present under reports/observability/
-- [x] Tests pass locally: `PYTHONPATH="$(pwd)" pytest -q` → 6 passed
-- [x] Makefile present with setup/run/test targets
-- [x] v1.0 tag created and pushed
-- [x] Conda environment reproducible (Python 3.11)
-- [x] Sample dataset included under data/sample_fb_ads.csv
+This checklist summarizes how the project was built and what is included.
 
-Reviewer can reproduce entire pipeline using:
+## 1. Structure
+- Clear folder layout  
+- Separate modules for data work, hypothesis logic, validation, and reporting  
+- Orchestrator coordinates everything  
+- Tests stored in a dedicated folder  
 
-conda create -n kasparro python=3.11 -c conda-forge -y
+## 2. Data handling
+- Loads CSV safely  
+- Handles missing columns (e.g., purchases)  
+- Computes ROAS and CTR when missing  
+- Summaries include global metrics and campaign-level metrics  
 
-conda activate kasparro
+## 3. Hypothesis generation
+- Generates a small set of straightforward hypotheses  
+- Uses actual data patterns such as ROAS changes and low CTR  
+- Includes confidence values that can later be refined  
 
-pip install -r requirements.txt
+## 4. Validation logic
+- Checks hypotheses with simple comparisons  
+- Supports threshold adjustments  
+- Produces final confidence and notes  
+- Tested against malformed and empty inputs  
 
-python run.py "Analyze ROAS drop in last 7 days"
+## 5. Creative suggestions
+- Identifies campaigns with low CTR  
+- Generates simple text suggestions  
+- Keeps output deterministic and readable  
+
+## 6. Orchestration
+- Runs all steps in sequence  
+- Writes results to JSON files  
+- Generates a short human-readable report  
+- Saves logs for understanding run history  
+
+## 7. Logging
+- Each major step writes a log entry  
+- Logs include timestamps and basic metadata  
+- All logs stored in a single folder for simplicity  
+
+## 8. Tests
+- Covers data loading  
+- Covers summary calculations  
+- Covers hypothesis evaluation  
+- Covers creative generation  
+- Includes a small end-to-end run test  
+- All tests pass  
+
+## 9. Reproducibility
+- No external network calls  
+- Static thresholds in config  
+- Results fully determined by input CSV  
+- Requirements pinned to specific versions  
+
+## 10. What can be improved
+- Expand test coverage for unusual datasets  
+- Add more hypothesis types  
+- Improve explanations in the generated report  
+- Add optional configuration for thresholds or filters  
