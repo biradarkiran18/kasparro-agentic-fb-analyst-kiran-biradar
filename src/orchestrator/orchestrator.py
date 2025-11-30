@@ -142,16 +142,13 @@ def run(query: str) -> Tuple[Any, Any]:
         "num_creatives": len(creatives) if creatives else 0,
         "rows_in_input": int(summary.get("global", {}).get("rows_in_input", 0)),
         "metrics_version": cfg.get("metrics_version", "v1"),
-        # put most important dyn thresholds into metrics for downstream alerting
         "dyn_ctr_low_threshold": dyn.get("ctr_low_threshold"),
         "dyn_roas_drop_threshold": dyn.get("roas_drop_threshold"),
     }
 
-    # add roas_drop to metrics if available (evaluator may attach it)
     if isinstance(eval_metrics, dict) and "roas_drop" in eval_metrics:
         metrics["roas_drop"] = eval_metrics["roas_drop"]
 
-    # compute duration
     try:
         fmt = "%Y-%m-%dT%H:%M:%S.%fZ"
         start_dt = datetime.strptime(start_ts, fmt)
@@ -162,14 +159,12 @@ def run(query: str) -> Tuple[Any, Any]:
 
     write_metrics(metrics, path=cfg.get("metrics_output", "reports/metrics.json"))
 
-    # advanced alert rules (example: roas drop + low validation/no creatives)
     alert_result = alert_rule_roas_drop(metrics, thresholds)
     if alert_result.get("alerted"):
         write_alert({"level": "warning", "reason": alert_result.get("reason"),
                     "metrics": metrics}, path=os.path.join(obs_dir, "alerts.json"))
         log_event("orchestrator", "alert_raised", {"reason": alert_result.get("reason")}, base_dir=obs_dir)
 
-    # human report
     with open("reports/report.md", "w", encoding="utf-8") as f:
         f.write("# Agentic FB Analyst Report\n")
         f.write(f"Query: {query}\n")
