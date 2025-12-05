@@ -11,7 +11,7 @@ def test_validate_missing_fields():
     hyps = [{"id": None, "hypothesis": "", "initial_confidence": "not-a-number"}]
     validated, metrics = validate(hyps, {}, {"confidence_min": 0.3})
     assert metrics["num_hypotheses"] == 1
-    assert validated[0]["validated"] is False
+    assert validated[0]["passed"] is False  # V2: check 'passed' field
 
 
 def test_validate_small_sample_adjustment():

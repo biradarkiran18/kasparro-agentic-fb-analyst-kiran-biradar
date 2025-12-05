@@ -12,5 +12,7 @@ def test_insights_format():
         },
         "by_campaign": [],
     }
-    h = generate_hypotheses(summary)
+    tasks = []  # V2: pass tasks
+    cfg = {"confidence_min": 0.5}  # V2: pass config
+    h = generate_hypotheses(summary, tasks, cfg)
     assert isinstance(h, list)

@@ -13,3 +13,10 @@ reports/*.json
 .env
 pytest_output.txt
 run_report.txt
+
+# macOS system files
+.DS_Store
+
+# Old backup files
+*_old.*
+*_backup.*
