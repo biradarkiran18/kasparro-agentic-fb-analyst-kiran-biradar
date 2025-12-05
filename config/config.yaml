@@ -1,14 +1,43 @@
+# Data source configuration
 data_csv: data/sample_fb_ads.csv
+
+# Observability and output paths
 observability_dir: logs/observability
 metrics_output: reports/metrics.json
+
+# Threshold configuration (dynamic computation)
+# These are baseline values; actual thresholds computed from data
 ctr_low_threshold: 0.01
 roas_drop_threshold: 0.2
 confidence_min: 0.5
+
+# Baseline computation parameters
 window_days: 30
 min_days: 7
+
+# Z-score thresholds for anomaly detection
 ctr_z: 1.5
 roas_z: 1.0
-metrics_version: v1
+
+# Insight generation parameters
+top_k_insights: 5
+ctr_decline_threshold: -0.05  # 5% decline triggers hypothesis
+roas_decline_threshold: -0.05  # 5% decline triggers hypothesis
+
+# Severity classification thresholds
+severity_critical_threshold: -0.40  # 40% decline = critical
+severity_high_threshold: -0.20      # 20% decline = high
+severity_medium_threshold: -0.05    # 5% decline = medium
+
+# Creative generation parameters
+max_creatives_per_insight: 3
+keyword_extraction_top_n: 3
+
+# System configuration
+metrics_version: v2
 sample_mode: false
 sample_size: 5000
 chunksize: null
+
+# Schema validation
+strict_schema_validation: false
