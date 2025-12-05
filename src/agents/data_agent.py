@@ -330,6 +330,8 @@ def summarize_data(df: pd.DataFrame, cfg: Dict[str, Any], *, base_dir: str = "lo
 # Backward-compatible aliases for tests
 def load_data(path: str, *, sample_mode: bool = False, **kwargs) -> pd.DataFrame:
     """Backward-compatible wrapper for tests."""
+    # Remove sample_size from kwargs if present (not supported by load_csv_safe)
+    kwargs.pop('sample_size', None)
     return load_csv_safe(path, **kwargs)
 
 

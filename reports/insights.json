@@ -1,18 +1,1 @@
-[
-  {
-    "id": "9b684e5a",
-    "hypothesis": "ROAS has declined by -100.0% vs baseline; investigate budget/creative/traffic",
-    "impact": "critical",
-    "confidence": 1.0,
-    "passed": true,
-    "evidence": {
-      "ctr_delta_pct": Infinity,
-      "roas_delta_pct": 0.0,
-      "last_ctr": 0.014823462890554386,
-      "ctr_baseline": 0.0,
-      "last_roas": 0.0,
-      "roas_baseline": 0.0,
-      "rows_used_for_baseline": 90
-    }
-  }
-]
+[]

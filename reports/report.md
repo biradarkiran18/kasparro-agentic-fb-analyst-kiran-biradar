@@ -1,5 +1,5 @@
 # Agentic FB Analyst Report
-Query: test query
-Run time: 2025-12-04T22:26:02.832386Z
+Query: data/sample_fb_ads.csv
+Run time: 2025-12-05T08:03:11.630918Z
 
 Insights and creatives saved to reports/.

@@ -1,7 +1,14 @@
 {
-  "validation_rate": 1.0,
-  "num_hypotheses": 1,
-  "num_passed": 1,
-  "ctr_baseline": 0.0,
-  "roas_baseline": 0.0
+  "query": "data/sample_fb_ads.csv",
+  "start_ts": "2025-12-05T08:03:11.600652Z",
+  "run_ts": "2025-12-05T08:03:11.630144Z",
+  "num_hypotheses": 0,
+  "num_validated": null,
+  "validation_rate": 0.0,
+  "num_creatives": 0,
+  "rows_in_input": 0,
+  "metrics_version": "v2",
+  "dyn_ctr_low_threshold": 0.01075177991332213,
+  "dyn_roas_drop_threshold": 0.48565501867363564,
+  "duration_ms": 29
 }

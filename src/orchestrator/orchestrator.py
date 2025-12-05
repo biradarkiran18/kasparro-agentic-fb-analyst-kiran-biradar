@@ -119,8 +119,7 @@ def run(query: str) -> Tuple[Any, Any]:
         log_event("observability", "extra_aggregates_failed", {"correlation_id": correlation_id}, base_dir=obs_dir)
 
     # creatives
-    low = find_low_ctr(summary, thresholds["ctr_low_threshold"])
-    creatives = generate_creatives(low, df)
+    creatives = generate_creatives(validated, summary, df, base_dir=obs_dir)
 
     # write outputs
     os.makedirs("reports", exist_ok=True)
@@ -174,4 +173,8 @@ def run(query: str) -> Tuple[Any, Any]:
     log_event("orchestrator", "run_completed", {"metrics": metrics,
               "trace_id": trace_id, "correlation_id": correlation_id}, base_dir=obs_dir)
 
-    return validated, creatives
+    return {
+        "validated": validated,
+        "creatives": creatives,
+        "metrics": metrics
+    }
